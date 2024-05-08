@@ -1,62 +1,89 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Button, TextInput, Image, SafeAreaView, TouchableOpacity, StatusBar, Alert } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, Image, SafeAreaView, StatusBar, Alert } from "react-native";
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { auth, firestore } from '../config/firebase';
+
 const backImage = require("../assets/backImage.png");
 
 export default function Signup({ navigation }) {
-
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-const onHandleSignup = () => {
-    if (email !== '' && password !== '') {
-  createUserWithEmailAndPassword(auth, email, password)
-        .then(() => console.log('Signup success'))
-        .catch((err) => Alert.alert("Login error", err.message));
+  const onHandleSignup = () => {
+    if (email !== '' && password !== '' && confirmPassword !== '' && password === confirmPassword) {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          // Store additional user data in Firestore
+          const userRef = doc(firestore, "users", user.uid);
+          setDoc(userRef, {
+            fullName: fullName,
+            email: email
+          })
+            .then(() => {
+              console.log("User data stored successfully");
+              // Navigate to another screen or perform other actions after successful signup
+            })
+            .catch((error) => {
+              console.error("Error storing user data: ", error);
+            });
+        })
+        .catch((error) => {
+          const errorMessage = error.message;
+          Alert.alert("Signup error", errorMessage);
+        });
+    } else {
+      Alert.alert("Error", "Please fill in all fields and ensure passwords match.");
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <Image source={backImage} style={styles.backImage} />
       <View style={styles.whiteSheet} />
       <SafeAreaView style={styles.form}>
         <Text style={styles.title}>Sign Up</Text>
-         <TextInput
-        style={styles.input}
-        placeholder="Enter email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        autoFocus={true}
-        value={email}
-        onChangeText={(text) => setEmail(text)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter password"
-        autoCapitalize="none"
-        autoCorrect={false}
-        secureTextEntry={true}
-        textContentType="password"
-        value={password}
-        onChangeText={(text) => setPassword(text)}
-      />
-      <TouchableOpacity style={styles.button} onPress={onHandleSignup}>
-        <Text style={{fontWeight: 'bold', color: '#fff', fontSize: 18}}> Sign Up</Text>
-      </TouchableOpacity>
-      <View style={{marginTop: 20, flexDirection: 'row', alignItems: 'center', alignSelf: 'center'}}>
-        <Text style={{color: 'gray', fontWeight: '600', fontSize: 14}}>Don't have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text style={{color: '#f57c00', fontWeight: '600', fontSize: 14}}> Log In</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Full Name"
+          value={fullName}
+          onChangeText={(text) => setFullName(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={(text) => setEmail(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          secureTextEntry={true}
+          value={password}
+          onChangeText={(text) => setPassword(text)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm Password"
+          secureTextEntry={true}
+          value={confirmPassword}
+          onChangeText={(text) => setConfirmPassword(text)}
+        />
+        <TouchableOpacity style={styles.button} onPress={onHandleSignup}>
+          <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
-      </View>
+        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.signInLink}>Already have an account? Log In</Text>
+        </TouchableOpacity>
       </SafeAreaView>
       <StatusBar barStyle="light-content" />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -104,5 +131,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 40,
+  },
+  buttonText: {
+    fontWeight: 'bold',
+    color: '#fff',
+    fontSize: 18,
+  },
+  signInLink: {
+    color: '#f57c00',
+    fontWeight: '600',
+    fontSize: 16,
+    marginTop: 20,
+    textAlign: 'center',
   },
 });

@@ -1,69 +1,91 @@
-import React, { useEffect } from "react";
-import { View, TouchableOpacity, Text, Image, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { FontAwesome } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
 import colors from '../colors';
-import { Entypo } from '@expo/vector-icons';
-const catImageUrl = "https://i.guim.co.uk/img/media/26392d05302e02f7bf4eb143bb84c8097d09144b/446_167_3683_2210/master/3683.jpg?width=1200&height=1200&quality=85&auto=format&fit=crop&s=49ed3252c0b2ffb49cf8b508892e452d";
 
-const Home = () => {
+const Login = ({ navigation }) => { // Pass navigation prop
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-    const navigation = useNavigation();
+  const handleLogin = () => {
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // User successfully logged in
+        const user = userCredential.user;
+        console.log('User logged in:', user.uid);
+        // Navigate to home screen
+        navigation.navigate('Home'); // Navigate to the home screen
+      })
+      .catch((error) => {
+        // Handle login error
+        Alert.alert('Login Error', error.message);
+      });
+  };
 
-    useEffect(() => {
-        navigation.setOptions({
-            headerLeft: () => (
-                <FontAwesome name="search" size={24} color={colors.gray} style={{marginLeft: 15}}/>
-            ),
-            headerRight: () => (
-                <Image
-                    source={{ uri: catImageUrl }}
-                    style={{
-                        width: 40,
-                        height: 40,
-                        marginRight: 15,
-                    }}
-                />
-            ),
-        });
-    }, [navigation]);
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Login</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+        <Text style={styles.registerText}>Don't have an account? Register here</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-    return (
-        <View style={styles.container}>
-            <TouchableOpacity
-                onPress={() => navigation.navigate("Chat")}
-                style={styles.chatButton}
-            >
-                <Entypo name="chat" size={24} color={colors.lightGray} />
-            </TouchableOpacity>
-        </View>
-    );
-    };
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    width: '80%',
+    height: 40,
+    borderColor: colors.lightGray,
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  button: {
+    width: '80%',
+    height: 40,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  registerText: {
+    marginTop: 10,
+    color: colors.primary,
+  },
+});
 
-    export default Home;
-
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            justifyContent: 'flex-end',
-            alignItems: 'flex-end',
-            backgroundColor: "#fff",
-        },
-        chatButton: {
-            backgroundColor: colors.primary,
-            height: 50,
-            width: 50,
-            borderRadius: 25,
-            alignItems: 'center',
-            justifyContent: 'center',
-            shadowColor: colors.primary,
-            shadowOffset: {
-                width: 0,
-                height: 2,
-            },
-            shadowOpacity: .9,
-            shadowRadius: 8,
-            marginRight: 20,
-            marginBottom: 50,
-        }
-    });
+export default Login;

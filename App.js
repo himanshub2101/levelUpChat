@@ -9,58 +9,57 @@ import Signup from './screens/Signup';
 import Chat from './screens/Chat';
 import Home from './screens/Home';
 
+
 const Stack = createStackNavigator();
-const AuthenticatedUserContext = createContext({});
+const AuthenticatedUserContext = createContext();
 
 const AuthenticatedUserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // onAuthStateChanged returns an unsubscriber
     const unsubscribeAuth = onAuthStateChanged(
       auth,
-      async authenticatedUser => {
-        authenticatedUser ? setUser(authenticatedUser) : setUser(null);
+      (authenticatedUser) => {
+        setUser(authenticatedUser);
       }
     );
 
-    // unsubscribe auth listener on unmount
     return unsubscribeAuth;
-  }, []); // Empty dependency array to run only once after mount
+  }, []);
 
   return (
-    <AuthenticatedUserContext.Provider value={{ user, setUser }}>
+    <AuthenticatedUserContext.Provider value={{ user }}>
       {children}
     </AuthenticatedUserContext.Provider>
   );
 };
 
-function ChatStack() {
+
+const ChatStack = () => {
   return (
-    <Stack.Navigator defaultScreenOptions={Home}>
+    <Stack.Navigator initialRouteName="Home">
       <Stack.Screen name='Home' component={Home} />
       <Stack.Screen name='Chat' component={Chat} />
     </Stack.Navigator>
   );
-}
+};
 
-function AuthStack() {
+const AuthStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name='Login' component={Login} />
       <Stack.Screen name='Signup' component={Signup} />
     </Stack.Navigator>
   );
-}
+};
 
-// Wrap RootNavigator in a function component
 const RootNavigator = () => {
   const { user } = useContext(AuthenticatedUserContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsLoading(false);
-  }, [user]); // Run this effect whenever 'user' changes
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -72,15 +71,24 @@ const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      {user ? <ChatStack /> : <AuthStack />}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {user ? (
+          <Stack.Screen name='ChatStack' component={ChatStack} />
+        ) : (
+          <Stack.Screen name='AuthStack' component={AuthStack} />
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
 
-export default function App() {
+
+const App = () => {
   return (
     <AuthenticatedUserProvider>
       <RootNavigator />
     </AuthenticatedUserProvider>
   );
-}
+};
+
+export default App;
