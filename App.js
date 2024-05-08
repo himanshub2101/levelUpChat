@@ -14,7 +14,21 @@ const AuthenticatedUserContext = createContext({});
 
 const AuthenticatedUserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-return (
+
+  useEffect(() => {
+    // onAuthStateChanged returns an unsubscriber
+    const unsubscribeAuth = onAuthStateChanged(
+      auth,
+      async authenticatedUser => {
+        authenticatedUser ? setUser(authenticatedUser) : setUser(null);
+      }
+    );
+
+    // unsubscribe auth listener on unmount
+    return unsubscribeAuth;
+  }, []); // Empty dependency array to run only once after mount
+
+  return (
     <AuthenticatedUserContext.Provider value={{ user, setUser }}>
       {children}
     </AuthenticatedUserContext.Provider>
@@ -39,22 +53,16 @@ function AuthStack() {
   );
 }
 
-function RootNavigator() {
-  const { user, setUser } = useContext(AuthenticatedUserContext);
+// Wrap RootNavigator in a function component
+const RootNavigator = () => {
+  const { user } = useContext(AuthenticatedUserContext);
   const [isLoading, setIsLoading] = useState(true);
-useEffect(() => {
-    // onAuthStateChanged returns an unsubscriber
-    const unsubscribeAuth = onAuthStateChanged(
-      auth,
-      async authenticatedUser => {
-        authenticatedUser ? setUser(authenticatedUser) : setUser(null);
-        setIsLoading(false);
-      }
-    );
-// unsubscribe auth listener on unmount
-    return unsubscribeAuth;
-  }, [user]);
-if (isLoading) {
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, [user]); // Run this effect whenever 'user' changes
+
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size='large' />
@@ -62,7 +70,7 @@ if (isLoading) {
     );
   }
 
-return (
+  return (
     <NavigationContainer>
       {user ? <ChatStack /> : <AuthStack />}
     </NavigationContainer>
